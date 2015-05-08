@@ -35,7 +35,7 @@ public class InsertUserPOITextClient extends AbstractQueryClient{
 	public void executeQuery() {
 		 try {
 	            Put put = new Put(this.userPOIkey.getBytes());
-	            put.add("t".getBytes(), Bytes.toBytes(this.text.getTimestamp().getTime()), this.text.getBytes());
+	            put.add("t".getBytes(), Bytes.toBytes(this.text.getTimestamp()), this.text.getBytes());
 	            this.table.put(put);
 	            
 	        } catch (IOException ex) {

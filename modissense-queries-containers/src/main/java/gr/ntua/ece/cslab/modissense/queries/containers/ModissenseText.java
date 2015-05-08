@@ -2,7 +2,6 @@ package gr.ntua.ece.cslab.modissense.queries.containers;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
-import java.util.Date;
 
 /**
  * 
@@ -12,7 +11,7 @@ import java.util.Date;
 public class ModissenseText implements Serializable{
 
 	private String text;
-	private Date timestamp;
+	private long timestamp;
 	
 	public ModissenseText(){}
 	
@@ -24,11 +23,11 @@ public class ModissenseText implements Serializable{
 		this.text = text;
 	}
 	
-	public Date getTimestamp() {
+	public long getTimestamp() {
 		return timestamp;
 	}
 
-	public void setTimestamp(Date timestamp) {
+	public void setTimestamp(long timestamp) {
 		this.timestamp = timestamp;
 	}
 
