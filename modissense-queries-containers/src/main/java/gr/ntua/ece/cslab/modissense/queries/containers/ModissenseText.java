@@ -60,7 +60,11 @@ public class ModissenseText implements Serializable{
 	}
 	
 	public static void main(String[] args) {
-
+		ModissenseText mtext = new ModissenseText();
+		mtext.setText("This is a text");
+		mtext.setTimestamp(123456789L);
+		
+		System.out.println("Date = "+mtext.getTimestamp());
 	}
 
 }

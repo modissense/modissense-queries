@@ -47,16 +47,16 @@ public class UserPoiStruct {
     
     public void parseBytes(byte[] bytes) {
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        this.poiID = buffer.getLong();
         this.snIdentifier = buffer.getChar();
         this.userID = buffer.getLong();
-        this.poiID = buffer.getLong();
     }
 
     public byte[] getBytes() {
         ByteBuffer buffer = ByteBuffer.allocate(2*Long.SIZE/8+Character.SIZE/8);
+        buffer.putLong(this.poiID);
         buffer.putChar(this.snIdentifier);
         buffer.putLong(this.userID);
-        buffer.putLong(this.poiID);
         return buffer.array();
     }
 
