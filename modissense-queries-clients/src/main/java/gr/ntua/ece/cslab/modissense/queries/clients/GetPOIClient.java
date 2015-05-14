@@ -5,6 +5,7 @@
  */
 package gr.ntua.ece.cslab.modissense.queries.clients;
 
+import gr.ntua.ece.cslab.modissense.queries.containers.UserIdStruct;
 import java.io.IOException;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.HTable;
@@ -40,7 +41,12 @@ public class GetPOIClient {
                 results++;
             }
         }
+        System.out.println("Number of global comments for POI "+poiId+": "+results);
         return results;
+    }
+    
+    public String getCommentFromFriend(Long poiId, UserIdStruct friend){
+        return "";
     }
     
     
