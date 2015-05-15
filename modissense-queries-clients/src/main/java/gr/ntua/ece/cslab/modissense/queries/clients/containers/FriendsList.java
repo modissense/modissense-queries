@@ -150,7 +150,7 @@ public class FriendsList {
 
     @Override
     public String toString() {
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
         
 //        buffer.append()
         for(UserIdStruct f : this.friends) {

@@ -26,8 +26,7 @@ import org.apache.hadoop.hbase.util.Bytes;
  */
 public class GetPOIClient {
 
-    private final String 
-            TABLE_NAME_TEXT_REPO = "TextRepo",
+    private static final String TABLE_NAME_TEXT_REPO = "TextRepo",
             TABLE_NAME_FRIENDS = "ModisUsers";
 
     // fields used for input
@@ -35,12 +34,12 @@ public class GetPOIClient {
     private long poiId;
 
     // fields used to carry output results
-    private int personalizedHotness;
-    private double personalizedInterest;
-    private String comment;
+    private int personalizedHotness;        //done
+    private double personalizedInterest;    //done
+    private String comment;                 //done
     private String commentUser;
     private String commentUserPicURL;
-    private int numberOfFriendsComments;
+    private int numberOfFriendsComments;    //done
 
     // intermediate friends list
     private List<UserIdStruct> friendsList;
@@ -61,9 +60,7 @@ public class GetPOIClient {
         this.userId = userId;
         this.poiId = poiId;
     }
-    
-    
-    
+
     // public interface
     public void executeQuery() throws IOException {
         this.loadFriends();
@@ -81,7 +78,6 @@ public class GetPOIClient {
             list.parseCompressedBytes(kv.getValue());
             this.friendsList = list.getFriends();
         }
-        System.out.println("Friends loaded:"+this.friendsList);
     }
 
     /**
@@ -94,25 +90,55 @@ public class GetPOIClient {
     private void parseFriendComments() throws IOException {
         List<Get> getList = new LinkedList<>();
         byte[] poiIdToBytes = Bytes.toBytes(this.poiId);
-        for(UserIdStruct u:this.friendsList) {
-            byte[] row = new byte[u.getBytes().length+poiIdToBytes.length];
-            int index=0;
-            for(byte b:poiIdToBytes)
-                row[index++]=b;
-            for(byte b:u.getBytes())
-                row[index++]=b;
+        for (UserIdStruct u : this.friendsList) {
+            byte[] row = new byte[u.getBytes().length + poiIdToBytes.length];
+            int index = 0;
+            for (byte b : poiIdToBytes) {
+                row[index++] = b;
+            }
+            for (byte b : u.getBytes()) {
+                row[index++] = b;
+            }
             getList.add(new Get(row));
         }
-        HTable table = new HTable(HBaseConfiguration.create(), TABLE_NAME_TEXT_REPO);
-        Result[] results =table.get(getList);
-        this.numberOfFriendsComments=results.length;
-        
-        List<ModissenseText> list = new LinkedList<>();
-        for(Result r: results) {
-            ModissenseText text = new ModissenseText();
+        HTable table = new HTable(HBaseConfiguration.create(), TABLE_NAME_TEXT_REPO);        
+        List<Result> friendsComments = new LinkedList<>();
+        for(Result r:table.get(getList)) {
+            if(!r.isEmpty()) {
+                friendsComments.add(r);
+            }
         }
+        this.personalizedHotness = friendsComments.size();
+        int count=0;
+        
+        ModissenseText maxText = null;
+        UserIdStruct maxUser = null;
+        
+        for(Result r:friendsComments) {
+            ModissenseText text = new ModissenseText();
+            UserIdStruct currentUser = new UserIdStruct();
+//            System.out.println(L);
+            byte[] buffer = new byte[r.getRow().length-Long.SIZE/8];
+            for(int i=Long.SIZE/8;i<r.getRow().length;i++)
+                buffer[i-Long.SIZE/8] = r.getRow()[i];
+            currentUser.parseBytes(buffer);
+            for (Map.Entry<byte[], byte[]> kv : r.getFamilyMap("t".getBytes()).entrySet()) {
+                text.parseBytes(kv.getValue());
+                this.personalizedInterest+=text.getScore();
+                count++;
+                if(maxText==null || maxText.getScore()<text.getScore()) {
+                    maxText = text;
+                    maxUser = currentUser;
+                }
+            }
+        }
+        this.personalizedInterest /= count;
+        this.numberOfFriendsComments = count;
+        this.comment = maxText.getText();
+        
+//        System.out.println(maxUser);
     }
-    
+
     // Getters and setters
     public void setUserId(UserIdStruct userId) {
         this.userId = userId;
@@ -122,7 +148,6 @@ public class GetPOIClient {
         this.poiId = poiId;
     }
 
-    
     // == 
     public int getPersonalizedHotness() {
         return personalizedHotness;
@@ -147,14 +172,4 @@ public class GetPOIClient {
     public int getNumberOfFriendsComments() {
         return numberOfFriendsComments;
     }
-
-    public static void main(String[] args) throws IOException {
-        GetPOIClient client = new GetPOIClient(new UserIdStruct('F', 100008415518168L), 11534L);
-        
-        client.executeQuery();
-        System.out.println(client.getNumberOfFriendsComments());
-
-//        }
-    }
-
 }
