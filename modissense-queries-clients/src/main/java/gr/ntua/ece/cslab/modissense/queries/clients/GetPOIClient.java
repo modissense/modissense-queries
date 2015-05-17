@@ -13,7 +13,6 @@ import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HTable;
@@ -27,7 +26,8 @@ import org.apache.hadoop.hbase.util.Bytes;
 public class GetPOIClient {
 
     private static final String TABLE_NAME_TEXT_REPO = "TextRepo",
-            TABLE_NAME_FRIENDS = "ModisUsers";
+            TABLE_NAME_FRIENDS = "ModisUsers",
+            TABLE_NAME_FRIENDS_INFO = "UserDetailsTable";
 
     // fields used for input
     private UserIdStruct userId;
@@ -43,6 +43,7 @@ public class GetPOIClient {
 
     // intermediate friends list
     private List<UserIdStruct> friendsList;
+    private UserIdStruct maxUser;
 
     /**
      * Empty constructor, does nothing by default.
@@ -65,6 +66,7 @@ public class GetPOIClient {
     public void executeQuery() throws IOException {
         this.loadFriends();
         this.parseFriendComments();
+        this.loadFriendsInfo();
     }
 
     // util methods
@@ -101,32 +103,33 @@ public class GetPOIClient {
             }
             getList.add(new Get(row));
         }
-        HTable table = new HTable(HBaseConfiguration.create(), TABLE_NAME_TEXT_REPO);        
+        HTable table = new HTable(HBaseConfiguration.create(), TABLE_NAME_TEXT_REPO);
         List<Result> friendsComments = new LinkedList<>();
-        for(Result r:table.get(getList)) {
-            if(!r.isEmpty()) {
+        for (Result r : table.get(getList)) {
+            if (!r.isEmpty()) {
                 friendsComments.add(r);
             }
         }
         this.personalizedHotness = friendsComments.size();
-        int count=0;
-        
+        int count = 0;
+
         ModissenseText maxText = null;
-        UserIdStruct maxUser = null;
-        
-        for(Result r:friendsComments) {
+        maxUser = null;
+
+        for (Result r : friendsComments) {
             ModissenseText text = new ModissenseText();
             UserIdStruct currentUser = new UserIdStruct();
 //            System.out.println(L);
-            byte[] buffer = new byte[r.getRow().length-Long.SIZE/8];
-            for(int i=Long.SIZE/8;i<r.getRow().length;i++)
-                buffer[i-Long.SIZE/8] = r.getRow()[i];
+            byte[] buffer = new byte[r.getRow().length - Long.SIZE / 8];
+            for (int i = Long.SIZE / 8; i < r.getRow().length; i++) {
+                buffer[i - Long.SIZE / 8] = r.getRow()[i];
+            }
             currentUser.parseBytes(buffer);
             for (Map.Entry<byte[], byte[]> kv : r.getFamilyMap("t".getBytes()).entrySet()) {
                 text.parseBytes(kv.getValue());
-                this.personalizedInterest+=text.getScore();
+                this.personalizedInterest += text.getScore();
                 count++;
-                if(maxText==null || maxText.getScore()<text.getScore()) {
+                if (maxText == null || maxText.getScore() < text.getScore()) {
                     maxText = text;
                     maxUser = currentUser;
                 }
@@ -134,9 +137,29 @@ public class GetPOIClient {
         }
         this.personalizedInterest /= count;
         this.numberOfFriendsComments = count;
-        this.comment = maxText.getText();
-        
+        if(maxText!=null)
+            this.comment = maxText.getText();
+
 //        System.out.println(maxUser);
+    }
+
+    private void loadFriendsInfo() throws IOException {
+        if(this.maxUser==null)
+            return;
+        HTable table = new HTable(HBaseConfiguration.create(), TABLE_NAME_FRIENDS_INFO);
+        Get get = new Get(this.maxUser.getBytes());
+        Result rs = table.get(get);
+        byte[] result = rs.getValue("cf".getBytes(), "f".getBytes());
+        ByteBuffer buffer = ByteBuffer.wrap(result);
+
+        int length = buffer.getInt();
+        byte[] userNameBuffer = new byte[length];
+        buffer.get(userNameBuffer);
+        this.commentUser = new String(userNameBuffer,"UTF-8");
+        length = buffer.getInt();
+        byte[] userPictureURL = new byte[length];
+        buffer.get(userPictureURL);
+        this.commentUserPicURL = new String(userPictureURL,"UTF-8");
     }
 
     // Getters and setters
