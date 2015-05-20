@@ -13,6 +13,7 @@ import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HTable;
@@ -44,11 +45,13 @@ public class GetPOIClient {
     // intermediate friends list
     private List<UserIdStruct> friendsList;
     private UserIdStruct maxUser;
+    private Random random;
 
     /**
      * Empty constructor, does nothing by default.
      */
     public GetPOIClient() {
+        random = new Random();
     }
 
     /**
@@ -132,6 +135,9 @@ public class GetPOIClient {
                 if (maxText == null || maxText.getScore() < text.getScore()) {
                     maxText = text;
                     maxUser = currentUser;
+                } else if (maxText.getScore()==text.getScore() && this.random.nextBoolean()) {
+                    maxText = text;
+                    maxUser = currentUser;
                 }
             }
         }
@@ -150,6 +156,7 @@ public class GetPOIClient {
         Get get = new Get(this.maxUser.getBytes());
         Result rs = table.get(get);
         byte[] result = rs.getValue("cf".getBytes(), "f".getBytes());
+        System.out.println("result:" +result);
         ByteBuffer buffer = ByteBuffer.wrap(result);
 
         int length = buffer.getInt();
