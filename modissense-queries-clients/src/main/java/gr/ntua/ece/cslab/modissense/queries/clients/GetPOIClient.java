@@ -36,7 +36,7 @@ public class GetPOIClient {
 
     // fields used to carry output results
     private int personalizedHotness;        //done
-    private double personalizedInterest;    //done
+    private double personalizedInterest=0.0;    //done
     private String comment;                 //done
     private String commentUser;
     private String commentUserPicURL;
@@ -141,7 +141,11 @@ public class GetPOIClient {
                 }
             }
         }
-        this.personalizedInterest /= count;
+        if(count!=0) {
+            this.personalizedInterest /= count;
+        } else {
+            this.personalizedInterest = 0;
+        }
         this.numberOfFriendsComments = count;
         if(maxText!=null)
             this.comment = maxText.getText();
@@ -156,7 +160,6 @@ public class GetPOIClient {
         Get get = new Get(this.maxUser.getBytes());
         Result rs = table.get(get);
         byte[] result = rs.getValue("cf".getBytes(), "f".getBytes());
-        System.out.println("result:" +result);
         ByteBuffer buffer = ByteBuffer.wrap(result);
 
         int length = buffer.getInt();
