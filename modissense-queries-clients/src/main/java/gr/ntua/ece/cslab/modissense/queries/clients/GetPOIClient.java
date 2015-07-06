@@ -10,6 +10,7 @@ import gr.ntua.ece.cslab.modissense.queries.containers.ModissenseText;
 import gr.ntua.ece.cslab.modissense.queries.containers.UserIdStruct;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +37,7 @@ public class GetPOIClient {
 
     // fields used to carry output results
     private int personalizedHotness;        //done
-    private double personalizedInterest=0.0;    //done
+    private double personalizedInterest = 0.0;    //done
     private String comment;                 //done
     private String commentUser;
     private String commentUserPicURL;
@@ -119,10 +120,12 @@ public class GetPOIClient {
         ModissenseText maxText = null;
         maxUser = null;
 
+        List<ModissenseText> texts = new LinkedList<>();
+        List<UserIdStruct> userIds = new LinkedList<>();
         for (Result r : friendsComments) {
             ModissenseText text = new ModissenseText();
             UserIdStruct currentUser = new UserIdStruct();
-//            System.out.println(L);
+
             byte[] buffer = new byte[r.getRow().length - Long.SIZE / 8];
             for (int i = Long.SIZE / 8; i < r.getRow().length; i++) {
                 buffer[i - Long.SIZE / 8] = r.getRow()[i];
@@ -132,30 +135,56 @@ public class GetPOIClient {
                 text.parseBytes(kv.getValue());
                 this.personalizedInterest += text.getScore();
                 count++;
-                if (maxText == null || maxText.getScore() < text.getScore()) {
-                    maxText = text;
-                    maxUser = currentUser;
-                } else if (maxText.getScore()==text.getScore() && this.random.nextBoolean()) {
-                    maxText = text;
-                    maxUser = currentUser;
-                }
+//                System.err.println(text.getText());
+//                if (maxText == null || maxText.getScore() < text.getScore()) {
+//                    System.err.println("Chosing max comment");
+//                    maxText = text;
+//                    maxUser = currentUser;
+//                } else if (maxText.getScore()==text.getScore() && this.random.nextBoolean()) {
+//                    System.err.println("Chosing max comment");
+//                    maxText = text;
+//                    maxUser = currentUser;
+//                }
+                texts.add(text);
+                userIds.add(currentUser);
             }
         }
-        if(count!=0) {
+        if (texts.size() > 0) {
+            List<ModissenseText> bestTexts = new LinkedList<>();
+            List<UserIdStruct> bestUserIds = new LinkedList();
+            double maxValue = Double.MIN_VALUE;
+            for (ModissenseText t : texts) {
+                if (maxValue < t.getScore()) {
+                    maxValue = t.getScore();
+                }
+            }
+
+            for (int i = 0; i < texts.size(); i++) {
+                if (texts.get(i).getScore() == maxValue) {
+                    bestTexts.add(texts.get(i));
+                    bestUserIds.add(userIds.get(i));
+                }
+            }
+            int index = this.random.nextInt(bestTexts.size());
+            maxText = bestTexts.get(index);
+            maxUser = bestUserIds.get(index);
+        }
+        if (count != 0) {
             this.personalizedInterest /= count;
         } else {
             this.personalizedInterest = 0;
         }
         this.numberOfFriendsComments = count;
-        if(maxText!=null)
+        if (maxText != null) {
             this.comment = maxText.getText();
-
+        }
 //        System.out.println(maxUser);
     }
 
     private void loadFriendsInfo() throws IOException {
-        if(this.maxUser==null)
+        if (this.maxUser == null) {
             return;
+        }
         HTable table = new HTable(HBaseConfiguration.create(), TABLE_NAME_FRIENDS_INFO);
         Get get = new Get(this.maxUser.getBytes());
         Result rs = table.get(get);
@@ -165,11 +194,11 @@ public class GetPOIClient {
         int length = buffer.getInt();
         byte[] userNameBuffer = new byte[length];
         buffer.get(userNameBuffer);
-        this.commentUser = new String(userNameBuffer,"UTF-8");
+        this.commentUser = new String(userNameBuffer, "UTF-8");
         length = buffer.getInt();
         byte[] userPictureURL = new byte[length];
         buffer.get(userPictureURL);
-        this.commentUserPicURL = new String(userPictureURL,"UTF-8");
+        this.commentUserPicURL = new String(userPictureURL, "UTF-8");
     }
 
     // Getters and setters
