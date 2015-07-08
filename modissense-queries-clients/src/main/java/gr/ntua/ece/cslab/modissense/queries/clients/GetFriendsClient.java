@@ -51,6 +51,9 @@ public class GetFriendsClient {
         System.out.println("Userid is:\t"+this.userId);
         Get get = new Get(this.userId.getBytes());
         Result r = table.get(get);
+        if(r==null || r.isEmpty() || r.getFamilyMap("ids".getBytes())==null) {
+            return;
+        }
         for (Map.Entry<byte[], byte[]> kv : r.getFamilyMap("ids".getBytes()).entrySet()) {
             FriendsList list = new FriendsList(qId);
             list.parseCompressedBytes(kv.getValue());
