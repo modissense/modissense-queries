@@ -47,7 +47,7 @@ public class GetFriendsClient {
     // util methods
     private void loadFriends() throws IOException {
         HTable table = new HTable(HBaseConfiguration.create(), TABLE_NAME_FRIENDS);
-        UserIdStruct qId = new UserIdStruct(this.userId.getC(), this.userId.getId());
+//        UserIdStruct qId = new UserIdStruct(this.userId.getC(), this.userId.getId());
         System.out.println("Userid is:\t"+this.userId);
         Get get = new Get(this.userId.getBytes());
         Result r = table.get(get);
@@ -55,10 +55,11 @@ public class GetFriendsClient {
             return;
         }
         for (Map.Entry<byte[], byte[]> kv : r.getFamilyMap("ids".getBytes()).entrySet()) {
-            FriendsList list = new FriendsList(qId);
+            FriendsList list = new FriendsList(this.userId);
             list.parseCompressedBytes(kv.getValue());
             this.friendsList = list.getFriends();
         }
+        System.out.println("Found friends:\t"+friendsList);
     }
 
     
