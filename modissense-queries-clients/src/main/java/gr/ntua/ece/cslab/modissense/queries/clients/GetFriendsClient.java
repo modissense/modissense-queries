@@ -19,7 +19,7 @@ import org.apache.hadoop.hbase.client.Result;
  *
  * @author giannis
  */
-public class GetFriends {
+public class GetFriendsClient {
     
         private static final String TABLE_NAME_FRIENDS = "ModisUsers";
 
@@ -28,7 +28,7 @@ public class GetFriends {
     private UserIdStruct userId;
     
     
-    public GetFriends(UserIdStruct userId) {
+    public GetFriendsClient(UserIdStruct userId) {
         this.userId = userId;
     }
     
